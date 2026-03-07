@@ -1,15 +1,14 @@
 {
   "domain": "sp110e",
   "name": "SP110E RGB LED BLE Controller",
-  "documentation": "https://github.com/roslovets/SP110E-HASS",
-  "issue_tracker": "https://github.com/roslovets/SP110E-HASS/issues",
+  "documentation": "https://github.com/TheInfamousToTo/SP110E-HASS",
+  "issue_tracker": "https://github.com/TheInfamousToTo/SP110E-HASS/issues",
   "dependencies": [],
   "codeowners": [
-    "@roslovets"
+    "@roslovets",
+    "@TheInfamousToTo"
   ],
-  "requirements": [
-    "sp110e>=1.4.2"
-  ],
+  "requirements": [],
   "iot_class": "local_polling",
-  "version": "1.0.2"
+  "version": "2.0.0"
 }

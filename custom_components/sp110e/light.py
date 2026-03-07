@@ -6,13 +6,13 @@ from datetime import timedelta
 import voluptuous as vol
 from homeassistant.core import HomeAssistant
 from homeassistant.components.light import (LightEntity, ATTR_BRIGHTNESS, ATTR_RGBW_COLOR, ATTR_EFFECT, PLATFORM_SCHEMA,
-                                            COLOR_MODE_RGBW, SUPPORT_EFFECT)
+                                            ColorMode, LightEntityFeature)
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.helpers.device_registry import format_mac
 from homeassistant.util import Throttle
-from sp110e.controller import Controller
+from .sp110e_lib.controller import Controller
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -48,7 +48,6 @@ async def async_setup_platform(
         discovery_info: DiscoveryInfoType | None = None
 ) -> None:
     """Set up SP110E platform."""
-    # Assign configuration variables
     mac = config['mac']
     name = config['name']
     ic_model = config['ic_model']
@@ -57,9 +56,7 @@ async def async_setup_platform(
     speed = config['speed']
     strict = config['strict']
     add_effects = config['add_effects']
-    # Initialize device driver
     device = Controller(mac)
-    # Add device
     sp110e_entity = SP110EEntity(
         device,
         name=name,
@@ -134,12 +131,13 @@ class SP110EEntity(LightEntity):
         return format_mac(self._device.get_mac_address())
 
     @property
-    def supported_color_modes(self) -> list:
-        return [COLOR_MODE_RGBW]
+    def supported_color_modes(self) -> set:
+        """Return supported color modes as a set (required by modern HA)."""
+        return {ColorMode.RGBW}
 
     @property
     def supported_features(self) -> str:
-        return SUPPORT_EFFECT
+        return LightEntityFeature.EFFECT
 
     @property
     def effect_list(self) -> [str]:
@@ -158,7 +156,7 @@ class SP110EEntity(LightEntity):
 
     @property
     def color_mode(self):
-        return COLOR_MODE_RGBW
+        return ColorMode.RGBW
 
     @property
     def name(self) -> str:
