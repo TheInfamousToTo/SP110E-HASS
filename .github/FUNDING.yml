@@ -1,5 +1,6 @@
-# GitHub will display these funding options on the repository page.
-# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository
-
-github: [TheInfamousToTo]
-buy_me_a_coffee: TheInfamousToTo
+github: TheInfamousToTo
+buy_me_a_coffee: theinfamoustoto
+ko_fi: theinfamoustoto
+custom:
+  - "https://github.com/sponsors/TheInfamousToTo"
+  - "https://paypal.me/alsatrawi"
