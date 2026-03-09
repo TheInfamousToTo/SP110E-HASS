@@ -2,11 +2,11 @@ from typing import Any, Union
 import asyncio
 from bleak import BleakClient, BleakScanner
 from bleak.exc import BleakError
+from bleak_retry_connector import establish_connection
 
 
 async def discover() -> list:
     """Discover BLE devices."""
-    # Updated: bleak removed top-level discover() in newer versions, use BleakScanner.discover()
     devices = await BleakScanner.discover()
     if devices:
         devices_list = [{d.name: d.address} for d in devices]
@@ -16,13 +16,7 @@ async def discover() -> list:
 
 
 class Driver:
-    """Low-level sp110e asynchronous BLE driver based on bleak library.
-
-    Use it only if you know why.
-
-    Author: Pavel Roslovets
-    https://roslovets.github.io
-    """
+    """Low-level sp110e asynchronous BLE driver based on bleak library."""
     IC_MODELS = (
         'SM16703', 'TM1804', 'UCS1903', 'WS2811', 'WS2801', 'SK6812', 'LPD6803', 'LPD8806', 'APA102', 'APA105',
         'DMX512', 'TM1914', 'TM1913', 'P9813', 'INK1003', 'P943S', 'P9411', 'P9413', 'TX1812', 'TX1813',
@@ -38,22 +32,32 @@ class Driver:
         """Initialize object."""
         self._handle_parameters(bytearray([0] * 12))
 
-    async def connect(self, mac_address: str, timeout: float = 3.0, auto_read: bool = True) -> Union[dict, None]:
-        """Establish BLE connection to device."""
+    async def connect(self, mac_address: str, timeout: float = 10.0, auto_read: bool = True) -> Union[dict, None]:
+        """Establish BLE connection to device using bleak-retry-connector for reliability."""
         device = await BleakScanner.find_device_by_address(mac_address, timeout=timeout)
         if not device:
             raise BleakError(f'A device with address {mac_address} could not be found')
-        self._client = BleakClient(device)
-        await self._client.connect()
+        self._client = await establish_connection(
+            BleakClient,
+            device,
+            mac_address,
+            disconnected_callback=self._disconnected_callback,
+        )
         await self._client.start_notify(self.CHARACTERISTIC, self._callback_handler)
         if auto_read:
             return await self.read_parameters()
         else:
             return None
 
+    def _disconnected_callback(self, client):
+        """Handle disconnection — reset client so reconnect is triggered on next command."""
+        self._client = None
+
     async def disconnect(self) -> None:
         """Close connection to device."""
-        await self._client.disconnect()
+        if self._client:
+            await self._client.disconnect()
+            self._client = None
 
     def is_connected(self) -> bool:
         """Check connection to device."""
@@ -73,9 +77,8 @@ class Driver:
         """Read parameters information from device."""
         self._flag = asyncio.Event()
         await self.send_command(0x10)
-        # Wait for callback with data from device
         try:
-            await asyncio.wait_for(self._flag.wait(), 1)
+            await asyncio.wait_for(self._flag.wait(), 2)
         except Exception:
             pass
         return self._parameters
@@ -129,9 +132,9 @@ class Driver:
         """Write device parameter to device."""
         if parameter == 'state':
             if value:
-                await self.send_command(0xAA)  # Switch on
+                await self.send_command(0xAA)
             else:
-                await self.send_command(0xAB)  # Switch off
+                await self.send_command(0xAB)
         elif parameter == 'mode':
             if value not in self.MODES:
                 raise ValueError(f'Mode is not supported: {value}')
@@ -166,13 +169,7 @@ class Driver:
             return None
 
     def _callback_handler(self, sender, data: bytearray):
-        """Handle callback with data from device.
-
-        Note: sender check removed for bleak compatibility.
-        In newer bleak versions, sender is a BleakGATTCharacteristic object,
-        not an integer, so the original 'if sender == 12' check always failed,
-        preventing state from ever being read back from the device.
-        """
+        """Handle callback with data from device."""
         self._handle_parameters(data)
         if self._flag:
             self._flag.set()

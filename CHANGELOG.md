@@ -1,4 +1,15 @@
 # Changelog
+## [2.0.1] - 2026-03-09
+
+### Fixed
+- **`ModuleNotFoundError: No module named 'syncer'`** — removed `controller_sync` 
+  from `__init__.py` imports. `controller_sync` is only for standalone Python scripts, 
+  not needed in Home Assistant.
+- **BLE connection drops** — updated `driver.py` to use `bleak_retry_connector` 
+  for reliable auto-reconnection. Previously a dropped BLE connection caused 
+  `RuntimeError: Session is closed` and required HA restart to recover.
+- Increased BLE connection timeout from 3s to 10s for better reliability.
+- Increased state read timeout from 1s to 2s.
 
 ## [2.0.0] - 2026-03-07
 

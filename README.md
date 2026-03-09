@@ -19,6 +19,8 @@ Control SP110E RGB LED BLE Controller from Home Assistant.
 | `TypeError: unsupported operand type(s) for \|: 'list' and 'set'` | `supported_color_modes` now returns a `set` as required by modern HA |
 | pip dependency fails silently on HAOS | `sp110e` library is now bundled directly inside the component — no pip install needed |
 | All internal imports broken after bundling | Fixed all imports to use relative paths |
+| `ModuleNotFoundError: No module named 'syncer'` | Removed `controller_sync` from `__init__.py` — it's only needed for standalone scripts, not HA |
+| BLE connection drops (`RuntimeError: Session is closed`, requires HA restart) | `driver.py` now uses `bleak_retry_connector` for reliable auto-reconnection; timeout raised from 3 s → 10 s |
 
 **Tested on:** Home Assistant 2026.3.0, Raspberry Pi 4 (built-in Bluetooth), Python 3.14
 
@@ -172,6 +174,9 @@ data:
 
 **State shows as off even when light is on**
 - This was a bug in the original integration — it's fixed in this fork
+
+**Light goes unavailable after a while / `RuntimeError: Session is closed`**
+- Fixed in v2.0.1 — the driver now uses `bleak_retry_connector` and automatically reconnects after BLE drops. Upgrade to v2.0.1 if you see this.
 
 ---
 
